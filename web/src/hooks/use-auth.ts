@@ -1,5 +1,5 @@
 "use client";
-import { useAuthStore } from '@/providers/auth-provider';
+import { useAuthStore } from '@/components/providers/AuthProvider';
 
 export function useAuth() {
   const { user, token, isLoading, login, logout } = useAuthStore();

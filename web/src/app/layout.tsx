@@ -1,17 +1,15 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
+import { AuthProvider } from '@/components/providers/AuthProvider'
 import { Toaster } from 'sonner'
-import { AuthProvider } from '@/providers/auth-provider'
-
-const inter = Inter({ subsets: ['latin'] })
+import { Analytics } from '@/components/Analytics'
 
 export const metadata: Metadata = {
-  title: 'AdithiFlow - Professional Payment Processing',
-  description: 'Advanced credit card processing platform for businesses and retailers',
-  icons: {
-    icon: '/favicon.ico',
-  },
+  title: 'PayFlow - Advanced Payment Processing Platform',
+  description: 'Professional credit card processing for modern businesses. Real-time transactions, commission management, and comprehensive analytics.',
+  keywords: 'payment processing, credit card, mobile payments, POS, financial technology',
+  authors: [{ name: 'PayFlow Team' }],
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
 }
 
 export default function RootLayout({
@@ -20,22 +18,29 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <AuthProvider>
-          {children}
-          <Toaster 
-            position="top-right"
-            richColors
-            toastOptions={{
-              style: {
-                background: 'rgba(255, 255, 255, 0.95)',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-              }
-            }}
-          />
-        </AuthProvider>
+    <html lang="en" className="dark">
+      <head>
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/logo.png" />
+      </head>
+      <body className="font-nexus antialiased">
+        <div className="min-h-screen bg-nexus-gradient cyber-grid">
+          <AuthProvider>
+            {children}
+            <Toaster 
+              position="top-right"
+              toastOptions={{
+                style: {
+                  background: 'rgba(19, 21, 26, 0.95)',
+                  border: '1px solid rgba(0, 212, 255, 0.2)',
+                  color: '#FFFFFF',
+                  backdropFilter: 'blur(12px)',
+                },
+              }}
+            />
+          </AuthProvider>
+        </div>
+        <Analytics />
       </body>
     </html>
   )

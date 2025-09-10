@@ -1,15 +1,59 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-export function Card({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn('rounded-2xl border border-white/30 bg-white/70 shadow-elev-1', className)}>{children}</div>;
-}
+const Card = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "cyber-card rounded-xl shadow-lg border border-border-primary bg-background-card backdrop-blur-xl",
+      className
+    )}
+    {...props}
+  />
+));
+Card.displayName = "Card";
 
-export function CardHeader({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn('px-5 py-4', className)}>{children}</div>;
-}
+const CardHeader = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("flex flex-col space-y-1.5 p-6", className)} {...props} />
+));
+CardHeader.displayName = "CardHeader";
 
-export function CardContent({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn('px-5 pb-5', className)}>{children}</div>;
-}
+const CardTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+  <h3
+    ref={ref}
+    className={cn("text-2xl font-semibold leading-none tracking-tight text-text-primary", className)}
+    {...props}
+  />
+));
+CardTitle.displayName = "CardTitle";
 
+const CardDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={cn("text-sm text-text-secondary", className)}
+    {...props}
+  />
+));
+CardDescription.displayName = "CardDescription";
+
+const CardContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+));
+CardContent.displayName = "CardContent";
+
+export { Card, CardHeader, CardContent, CardTitle, CardDescription };

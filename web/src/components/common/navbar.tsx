@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { useAuthStore } from '@/providers/auth-provider';
+import { useAuthStore } from '@/components/providers/AuthProvider';
 
 export function Navbar() {
   const pathname = usePathname();

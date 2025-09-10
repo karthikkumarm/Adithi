@@ -1,17 +1,13 @@
-// routes/auth.ts
+// src/routes/auth.ts
 
 import { Router, Request, Response } from "express";
 import * as admin from "firebase-admin";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import Joi from "joi";
-import { authenticateToken } from  "../middleware/auth";
+import { authenticateToken } from "../middleware/auth";
 
-// Best practice: Ensure JWT_SECRET is set.
-if (!process.env.JWT_SECRET) {
-  throw new Error("FATAL_ERROR: JWT_SECRET environment variable is not set.");
-}
-const JWT_SECRET = process.env.JWT_SECRET;
+// --- DELETED: The top-level JWT_SECRET check was removed from here ---
 
 const router = Router();
 const db = admin.firestore();
@@ -37,6 +33,14 @@ const registerSchema = Joi.object({
 // --- Login Endpoint ---
 router.post("/login", async (req: Request, res: Response): Promise<void> => {
   try {
+    // ADDED: Check for secret inside the function
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error("FATAL_ERROR: JWT_SECRET is not configured.");
+      res.status(500).json({ error: "Internal server configuration error." });
+      return;
+    }
+
     const { error, value } = loginSchema.validate(req.body);
     if (error) {
       res.status(400).json({ error: error.details[0].message });
@@ -62,7 +66,7 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
     }
     const token = jwt.sign(
       { uid: userDoc.id, role: userData.role },
-      JWT_SECRET,
+      jwtSecret, // Use the new variable
       { expiresIn: "24h" }
     );
     await db.collection("users").doc(userDoc.id).update({
@@ -77,66 +81,88 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// --- Register Endpoint ---
-router.post("/register", async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { error, value } = registerSchema.validate(req.body);
-    if (error) {
-      res.status(400).json({ error: error.details[0].message });
-      return;
+// --- Register Endpoint (CHANGED) ---
+// ADDED: 'authenticateToken' to make this a protected, admin-only route
+router.post("/register", authenticateToken, async (req: Request, res: Response): Promise<void> => {
+    try {
+      // ADDED: Check for secret inside the function
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        console.error("FATAL_ERROR: JWT_SECRET is not configured.");
+        res.status(500).json({ error: "Internal server configuration error." });
+        return;
+      }
+      
+      // ADDED: Role check to ensure only an owner can create new users
+      if (req.user?.role !== 'owner') {
+        res.status(403).json({ error: "Access denied: requires owner privileges." });
+        return;
+      }
+
+      const { error, value } = registerSchema.validate(req.body);
+      if (error) {
+        res.status(400).json({ error: error.details[0].message });
+        return;
+      }
+      const { email, password, name, role, businessName } = value;
+      const existingUser = await db
+        .collection("users")
+        .where("email", "==", email)
+        .limit(1)
+        .get();
+      if (!existingUser.empty) {
+        res.status(400).json({ error: "User with this email already exists" });
+        return;
+      }
+      const hashedPassword = await bcrypt.hash(password, 12);
+      const newUser = {
+        email,
+        password: hashedPassword,
+        name,
+        role,
+        isActive: true,
+        isVerified: false,
+        businessName: role === "retailer" ? businessName : null,
+        commissionRate: role === "retailer" ? 0.7 : null, // Default value
+        status: role === "retailer" ? "pending" : "active",
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      const userRef = await db.collection("users").add(newUser);
+      await admin.auth().createUser({
+        uid: userRef.id,
+        email,
+        displayName: name,
+        emailVerified: false,
+      });
+      const token = jwt.sign({ uid: userRef.id, role }, jwtSecret, { // Use the new variable
+        expiresIn: "24h",
+      });
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password: _, ...safeUserData } = newUser;
+      res.status(201).json({ user: { id: userRef.id, ...safeUserData }, token });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ error: "Registration failed" });
     }
-    const { email, password, name, role, businessName } = value;
-    const existingUser = await db
-      .collection("users")
-      .where("email", "==", email)
-      .limit(1)
-      .get();
-    if (!existingUser.empty) {
-      res.status(400).json({ error: "User with this email already exists" });
-      return;
-    }
-    const hashedPassword = await bcrypt.hash(password, 12);
-    const newUser = {
-      email,
-      password: hashedPassword,
-      name,
-      role,
-      isActive: true,
-      isVerified: false,
-      businessName: role === "retailer" ? businessName : null,
-      commissionRate: role === "retailer" ? 0.7 : null, // Default value
-      status: role === "retailer" ? "pending" : "active",
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    };
-    const userRef = await db.collection("users").add(newUser);
-    await admin.auth().createUser({
-      uid: userRef.id,
-      email,
-      displayName: name,
-      emailVerified: false, // Stays false until confirmed
-    });
-    const token = jwt.sign({ uid: userRef.id, role }, JWT_SECRET, {
-      expiresIn: "24h",
-    });
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _, ...safeUserData } = newUser;
-    res.status(201).json({ user: { id: userRef.id, ...safeUserData }, token });
-  } catch (error) {
-    console.error("Registration error:", error);
-    res.status(500).json({ error: "Registration failed" });
   }
-});
+);
 
 // --- Refresh Token Endpoint ---
-// Use the 'authenticateToken' middleware. No 'any' type needed for req.
 router.post("/refresh", authenticateToken, async (req: Request, res: Response): Promise<void> => {
     try {
-      // req.user is now strongly typed and guaranteed to exist by the middleware
+      // ADDED: Check for secret inside the function
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        console.error("FATAL_ERROR: JWT_SECRET is not configured.");
+        res.status(500).json({ error: "Internal server configuration error." });
+        return;
+      }
+      
       const user = req.user!;
       const token = jwt.sign(
         { uid: user.uid, role: user.role },
-        JWT_SECRET,
+        jwtSecret, // Use the new variable
         { expiresIn: "24h" }
       );
       res.status(200).json({ token });

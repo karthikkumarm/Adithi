@@ -1,53 +1,47 @@
-"use client";
 import * as React from 'react';
-import { motion } from 'framer-motion';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-xl font-medium transition-all focus-ring",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-cyan disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-apple-blue text-white shadow-elev-2 hover:shadow-lg hover:brightness-105 active:brightness-95",
-        outline: "border border-apple-gray-200 bg-white/60 hover:bg-white/80",
-        ghost: "hover:bg-apple-gray-50",
+        default: "btn-primary",
+        secondary: "btn-secondary",
+        ghost: "hover:bg-surface-1 text-text-secondary hover:text-text-primary",
+        destructive: "bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-red-600/25",
+        outline: "border border-border-primary hover:border-accent-cyan hover:text-accent-cyan",
       },
       size: {
-        sm: "h-9 px-3 text-sm",
-        md: "h-10 px-4",
-        lg: "h-11 px-5 text-base"
-      }
+        default: "h-10 px-4 py-2",
+        sm: "h-8 rounded-md px-3",
+        lg: "h-12 rounded-lg px-8",
+        icon: "h-10 w-10",
+      },
     },
     defaultVariants: {
-      variant: 'default',
-      size: 'md'
-    }
+      variant: "default",
+      size: "default",
+    },
   }
 );
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
-  isLoading?: boolean;
-}
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {}
 
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, isLoading, children, ...props }, ref) => {
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, ...props }, ref) => {
     return (
-      <motion.button
-        whileTap={{ scale: 0.98 }}
-        whileHover={{ y: -1 }}
+      <button
+        className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
-        className={cn(buttonVariants({ variant, size }), className)}
-        disabled={isLoading || props.disabled}
         {...props}
-      >
-        {isLoading && (
-          <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-white" />
-        )}
-        {children}
-      </motion.button>
+      />
     );
   }
 );
-Button.displayName = 'Button';
+Button.displayName = "Button";
 
+export { Button, buttonVariants };

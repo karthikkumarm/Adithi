@@ -3,7 +3,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { motion } from 'framer-motion';
 
 type FormValues = {

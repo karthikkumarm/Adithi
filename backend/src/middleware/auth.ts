@@ -1,16 +1,10 @@
-// middleware/auth.ts
+// src/middleware/auth.ts
 
 import { Request, Response, NextFunction } from "express";
 import * as admin from "firebase-admin";
 import jwt from "jsonwebtoken";
 
 const db = admin.firestore();
-
-// Best practice: Ensure JWT_SECRET is set. Fail fast if it's not.
-if (!process.env.JWT_SECRET) {
-  throw new Error("FATAL_ERROR: JWT_SECRET environment variable is not set.");
-}
-const JWT_SECRET = process.env.JWT_SECRET;
 
 interface DecodedToken {
   uid: string;
@@ -24,6 +18,17 @@ export const authenticateToken = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+  // MOVED THE CHECK FROM THE TOP LEVEL TO INSIDE THE FUNCTION
+  const jwtSecret = process.env.JWT_SECRET;
+
+  // This check now runs only when the endpoint is called, not during deployment analysis.
+  if (!jwtSecret) {
+    console.error("FATAL_ERROR: JWT_SECRET is not configured in the function's environment.");
+    // Send a generic error to the client for security
+    res.status(500).json({ error: "Internal server configuration error." });
+    return;
+  }
+
   const authHeader = req.headers["authorization"];
   const token = authHeader?.split(" ")[1];
 
@@ -33,7 +38,7 @@ export const authenticateToken = async (
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as DecodedToken;
+    const decoded = jwt.verify(token, jwtSecret) as DecodedToken;
     const userDoc = await db.collection("users").doc(decoded.uid).get();
 
     if (!userDoc.exists) {
@@ -43,7 +48,6 @@ export const authenticateToken = async (
 
     const userData = userDoc.data()!;
 
-    // Attach the user payload to the request object. No 'any' needed due to declaration merging.
     req.user = {
       uid: decoded.uid,
       role: userData.role,

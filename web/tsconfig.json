@@ -32,7 +32,7 @@
         "./src/hooks/*"
       ],
       "@/providers/*": [
-        "./src/providers/*"
+        "src/components/providers/*"
       ],
       "@/types": [
         "./src/types"

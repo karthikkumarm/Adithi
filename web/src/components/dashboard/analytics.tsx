@@ -1,7 +1,7 @@
 "use client";
 import * as React from 'react';
 import { ResponsiveContainer, AreaChart, Area, Tooltip, XAxis, YAxis } from 'recharts';
-import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 
 const data = Array.from({ length: 14 }).map((_, i) => ({
   day: `D${i + 1}`,
